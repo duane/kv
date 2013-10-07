@@ -2,8 +2,7 @@ package kv
 
 import (
   "errors"
-  _ "log"
-  "sstable"
+  "github.com/duane/sstable"
 )
 
 type MemTable interface {
@@ -42,7 +41,6 @@ func (h *HashMemTable) Flush(filename string) (err error) {
   prev = prev
   for k, v := range *h {
     version := uint64(0)
-    //log.Print(k, v)
     pair := &sstable.Pair{Key: &Key{Key: &k, Version: &version}, Value: v}
     pair_chan <- pair
     <-pair_chan
