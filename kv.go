@@ -2,6 +2,7 @@ package kv
 
 import (
   "errors"
+  _ "log"
   "sstable"
 )
 
@@ -13,12 +14,12 @@ type MemTable interface {
 
 type HashMemTable map[string][]byte
 
-var RowNotFoundError = errors.New("Row not found")
+var KeyNotFoundError = errors.New("Key not found")
 
 func (h *HashMemTable) Get(key string) (value []byte, err error) {
   value, ok := (*h)[key]
   if !ok {
-    err = RowNotFoundError
+    err = KeyNotFoundError
   }
   return
 }
@@ -34,25 +35,39 @@ func (h *HashMemTable) Del(key string) (err error) {
 }
 
 func (h *HashMemTable) Flush(filename string) (err error) {
-  pair_chan := make(chan sstable.Pair)
+  pair_chan := make(chan *sstable.Pair)
 
   go sstable.EncodePairStream(filename, pair_chan)
+  var prev *sstable.Pair
+  prev = prev
   for k, v := range *h {
-    pair := sstable.Pair{Key: []byte(k), Value: v}
+    version := uint64(0)
+    //log.Print(k, v)
+    pair := &sstable.Pair{Key: &Key{Key: &k, Version: &version}, Value: v}
     pair_chan <- pair
+    <-pair_chan
   }
+  close(pair_chan)
+  return
+}
+
+func ctor() (key sstable.Key) {
+  k := ""
+  v := uint64(0)
+  key = &Key{Key: &k, Version: &v}
   return
 }
 
 func (h *HashMemTable) Read(filename string) (err error) {
   pair_chan := make(chan *sstable.Pair)
-  go sstable.DecodePairStream(filename, pair_chan)
+
+  go sstable.DecodePairStream(ctor, filename, pair_chan)
   for {
     pair, ok := <-pair_chan
     if !ok {
       break
     }
-    err = h.Put(string(pair.Key), pair.Value)
+    err = h.Put(pair.Key.(*Key).GetKey(), pair.Value)
     if err != nil {
       return
     }

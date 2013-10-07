@@ -1,0 +1,6 @@
+package kv;
+
+message Key {
+  required string key = 1;
+  required uint64 version = 2;
+}

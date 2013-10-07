@@ -55,7 +55,7 @@ func TestFlush(t *testing.T) {
       panic(err.Error())
     }
     if bytes.Compare(v, v2) != 0 {
-      t.Fatalf("Values differ: %v vs %v", v, v2)
+      t.Fatalf("Values differ: %v vs %v", string(v), string(v2))
     }
   }
 }
